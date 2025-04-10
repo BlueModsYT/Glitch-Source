@@ -3,7 +3,7 @@ import { getRank } from "./ranks.js";
 import { ShopTestHandle } from "./shop.js";
 
 // Scoreboard Objectives
-export const objectives = {
+const objectives = {
     money: "Money",
     kills: "Kills",
     deaths: "Deaths",
@@ -15,8 +15,6 @@ export const objectives = {
     seconds: "S",
     online: "Online",
 };
-
-export default objectives;
 
 // Maximum money limit (prevents negative money)
 const MONEY_LIMIT = 2_147_483_647;
@@ -311,7 +309,7 @@ function WarpHandle(player) {
     form.button("Spawn", "textures/ui/conduit_power_effect")
         .button("Shop", "textures/ui/MCoin")
         .button("Mining Area", "textures/items/diamond_pickaxe")
-        .button("Kit Opener", "textures/items/shulker_top_lime")
+        .button("Kit Opener", "textures/items/shulker_shell")
         .button("Coming Soon", "textures/ui/missing_item")
         .button("§cBack", "textures/ui/arrow_left");
         
@@ -329,6 +327,7 @@ function WarpHandle(player) {
                 MiningHandle(player);
                 break;
             case 3:
+                // KitOpener(player);
                 WarpHandle(player);
                 player.playSound("random.break", { pitch: 1, volume: 0.4 });
                 break;
@@ -336,7 +335,7 @@ function WarpHandle(player) {
                 WarpHandle(player)
                 player.playSound("random.break", { pitch: 1, volume: 0.4 });
                 break;
-            case 5:
+            case 5: 
                 showCompassUI(player);
                 break;
         }

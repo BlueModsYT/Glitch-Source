@@ -9,7 +9,7 @@ const lootTable = [
 ];
 
 const targetChestLocation = { x: 0, y: -54, z: 0 };
-const requiredItem = "item.myname:epic_key";
+const requiredItem = "glitch:epic_key";
 const requiredName = "Special Key";
 
 function spawnFirework(dimension, location) {

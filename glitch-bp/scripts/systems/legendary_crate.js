@@ -9,7 +9,7 @@ const lootTable = [
 ];
 
 const targetChestLocation = { x: 0, y: -54, z: 0 };
-const requiredItem = "minecraft:tripwire_hook";
+const requiredItem = "glitch:legendary_key";
 const requiredName = "Special Key";
 
 function spawnFirework(dimension, location) {
