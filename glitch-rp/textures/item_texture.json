@@ -9,13 +9,13 @@
             "textures": "textures/items/common_key"
         },
         "epic_key": {
-			"textures": "textures/items/epic_key"
-		},
+            "textures": "textures/items/epic_key"
+        },
 		"rare_key": {
-			"textures": "textures/items/rare_key"
+		    "textures": "textures/items/rare_key"
 		},
 		"legendary_key": {
-			"textures": "textures/items/legendary_key"
+		    "textures": "textures/items/legendary_key"
 		}
     }
 }
