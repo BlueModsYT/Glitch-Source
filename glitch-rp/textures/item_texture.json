@@ -2,8 +2,8 @@
     "resource_pack_name": "glitch_textures",
     "texture_name": "atlas.items",
     "texture_data": {
-        "glitch": {
-            "textures": "textures/items/glitch"
+        "floating_text": {
+            "textures": "textures/items/floating_text"
         },
         "common_key": {
             "textures": "textures/items/common_key"
