@@ -4,9 +4,9 @@ import "./systems/scoreboard.js";
 import "./systems/sellpad.js";
 import "./systems/ranks.js";
 import "./systems/starterkit.js";
-import "./systems/common_crate.js";
-import "./systems/rare_crate.js";
-import "./systems/epic_crate.js";
-import "./systems/legendary_crate.js";
+import "./systems/crates/common_crate.js";
+import "./systems/crates/rare_crate.js";
+import "./systems/crates/epic_crate.js";
+import "./systems/crates/legendary_crate.js";
 
 import "./commands/main.js";

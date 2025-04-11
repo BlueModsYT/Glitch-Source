@@ -8,14 +8,19 @@ const lootTable = [
     { id: "minecraft:apple", amount: 10, chance: 15 }       // 15% chance
 ];
 
-const targetChestLocation = { x: 0, y: -54, z: 0 };
-const requiredItem = "glitch:rare_key";
-const requiredName = "Special Key";
+const targetChestLocation = { x: 248, y: -55, z: 32 };
+const requiredItem = "glitch:epic_key";
 
 function spawnFirework(dimension, location) {
-    const firework = dimension.spawnEntity("fireworks_rocket", location);
-    firework.nameTag = "Crate Celebration";
-    system.runTimeout(() => firework.triggerEvent("explode"), 5);
+    const { x, y, z } = location;
+
+    const offsets = [0, 0.2, -0.2, 0.1, -0.1];
+
+    for (let i = 0; i < offsets.length; i++) {
+        system.runTimeout(() => {
+            dimension.runCommand(`summon fireworks_rocket ${x + offsets[i]} ${y + 1} ${z + offsets[i]}`);
+        }, i * 2);
+    }
 }
 
 async function resetChest(dimension, location) {
@@ -48,7 +53,7 @@ function giveRandomLoot(player) {
     const leftover = container.addItem(itemStack);
     if (leftover) {
         player.sendMessage("§4[!] §cInventory full! Clear space and try again.");
-        world.playSound("block.anvil.land", player.location);
+        player.runCommand("playsound block.anvil.land @s");
         return false;
     }
     return true;
@@ -70,7 +75,7 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
     // Search for required key
     for (let i = 0; i < container.size; i++) {
         const item = container.getItem(i);
-        if (item?.typeId === requiredItem && item.nameTag === requiredName) {
+        if (item?.typeId === requiredItem) {
             keySlot = i;
             break;
         }
@@ -83,7 +88,7 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
 
     if (keySlot === -1) {
         player.sendMessage("§4[!] §cAccess Denied! Required: §6Special Key");
-        world.playSound("mob.enderdragon.growl", player.location);
+        player.runCommand("playsound mob.enderdragon.growl @s");
         return;
     }
 
@@ -102,9 +107,6 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
     // Success effects
     system.run(() => {
         spawnFirework(block.dimension, block.location);
-        world.sendMessage(`§6★ ${player.name} §ahas unlocked a special crate!`);
-        world.playSound("firework.launch", block.location);
+        world.sendMessage(`§6★ ${player.name} §ahas unlocked a epic crate!`);
     });
 });
-
-console.log("Premium Crate System Activated!");

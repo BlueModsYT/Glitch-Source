@@ -5,9 +5,9 @@ import main from "../config.js";
 Command.register({
     name: "test",
     description: "dummy command",
-    aliases: [],   
+    aliases: [],
     // <- (remove if the command is for admin) | permission: (player) => player.hasTag(main.adminTag),
 }, async (data) => {
-    player.sendMessage(`Successfully Executed`);
-    player.runCommandAsync(`playsound random.levelup`);
+    player.sendMessage(`Successfully Executed Test Command`);
+    player.runCommand(`playsound random.levelup`);
 });

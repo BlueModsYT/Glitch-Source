@@ -4,14 +4,16 @@ import main from "../config.js";
 
 Command.register({
     name: "ping",
-    description: "show the results of ping",
+    description: "",
     aliases: [],
 }, async (data) => {
+    await system.waitTicks(1);
+    
     const { player } = data;
     const start = Date.now();
-
-    await player.runCommandAsync(`testfor @s`);
-
+    
+    player.runCommand(`testfor @s`);
+    
     const responseTime = Date.now() - start;
     
     let pingStatus = "§aLow";
@@ -20,9 +22,9 @@ Command.register({
     } else if (responseTime > 50) {
         pingStatus = "§gMedium";
     }
-
+    
     const worldTPS = Math.min(20, 20);
     player.sendMessage(`§7[§a#§7] §aPing§7: §e${responseTime}ms §7[${pingStatus}§7] | §aTPS: §e${worldTPS}§7/§e20`);
-
-    player.runCommandAsync(`playsound random.orb @s`);
+    
+    player.runCommand(`playsound random.orb @s`);
 });
