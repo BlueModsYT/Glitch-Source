@@ -377,9 +377,9 @@ function SpawnHandle(player) {
             player.playSound("note.pling", { pitch: 1, volume: 0.4 });
             countdown--;
         } else {
-            player.runCommand("tp @s 0 100 0"); 
+            player.runCommand("tp @s 245 -51 68.01"); 
             player.sendMessage("§aSuccesfully teleported to Spawn");
-            player.playSound("random.levelup", { pitch: 1, volume: 0.4 });
+            player.runCommand("playsound random.levelup @s");
             system.clearRun(id);
         }
     }, 20); 
@@ -410,7 +410,7 @@ function ShopHandle(player) {
         } else {
             player.runCommand("tp @s 0 100 0"); 
             player.sendMessage("§aSuccesfully teleported to Shop");
-            player.playSound("random.levelup", { pitch: 1, volume: 0.4 });
+            player.runCommand("playsound random.levelup @s");
             system.clearRun(id);
         }
     }, 20);
@@ -449,7 +449,7 @@ function MiningHandle(player) {
 
             player.runCommand(`tp @s ${finalX.toFixed(2)} ${center.y} ${finalZ.toFixed(2)}`);
             player.sendMessage("§aSuccessfully teleported to the Mining Area!");
-            player.playSound("random.levelup", { pitch: 1, volume: 0.4 });
+            player.runCommand("playsound random.levelup @s");
             system.clearRun(id);
         }
     }, 20);
