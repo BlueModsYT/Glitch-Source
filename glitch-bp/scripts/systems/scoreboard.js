@@ -10,10 +10,11 @@ const objectives = {
     killstreak: "KS",
     kdr: "KDR",
     kdrd: "KDRD",
+    days: "D",
     hours: "H",
     minutes: "M",
     seconds: "S",
-    online: "Online",
+    online: "Online"
 };
 
 // Maximum money limit (prevents negative money)
@@ -151,7 +152,7 @@ world.afterEvents.entityDie.subscribe(event => {
 system.runInterval(() => {
     world.getPlayers().forEach(player => {
         increaseScore(player, objectives.seconds);
-
+        
         if (getScore(player, objectives.seconds) >= 60) {
             setScore(player, objectives.seconds, 0);
             increaseScore(player, objectives.minutes);
@@ -160,6 +161,11 @@ system.runInterval(() => {
         if (getScore(player, objectives.minutes) >= 60) {
             setScore(player, objectives.minutes, 0);
             increaseScore(player, objectives.hours);
+        }
+        
+        if (getScore(player, objectives.hours) >= 12) {
+            setScore(player, objectives.hours, 0);
+            increaseScore(player, objectives.days);
         }
     });
 }, 20);
@@ -175,6 +181,9 @@ system.runInterval(() => {
 // Auto `/titleraw` Update
 system.runInterval(() => {
     world.getPlayers().forEach(player => {
+        const start = Date.now();
+        player.runCommand(`testfor @s`);
+        const responseTime = Date.now() - start;
         const rank = getRank(player);
         const money = formatNumber(getScore(player, objectives.money));
 
@@ -188,7 +197,8 @@ system.runInterval(() => {
                 { "text": `§l§i|§r §5Deaths: §f` }, { "score": { "name": "@s", "objective": objectives.deaths } }, { "text": `\n` },
                 { "text": `§l§i|§r §9Killstreak: §f` }, { "score": { "name": "@s", "objective": objectives.killstreak } }, { "text": `\n` },
                 { "text": `§l§i|§r §5K/D: §f[` }, { "score": { "name": "@s", "objective": objectives.kdr } }, { "text": "] [" }, { "score": { "name": "@s", "objective": objectives.kdrd } }, { "text": `]\n` },
-                { "text": `§l§i|§r §9Time: §5H: §f` }, { "score": { "name": "@s", "objective": objectives.hours } }, { "text": ` §5M: §f` }, { "score": { "name": "@s", "objective": objectives.minutes } }, { "text": ` §5S: §f` }, { "score": { "name": "@s", "objective": objectives.seconds } }, { "text": `\n\n` },
+                { "text": `§l§i|§r §9Ping: §f${responseTime} §ams\n` },
+                { "text": `§l§i|§r §5Time: §5D:§f`}, { "score": { "name": "@s", "objective": objectives.days } }, { "text": ` §5H:§f` }, { "score": { "name": "@s", "objective": objectives.hours } }, { "text": ` §5M:§f` }, { "score": { "name": "@s", "objective": objectives.minutes } }, { "text": ` §5S:§f` }, { "score": { "name": "@s", "objective": objectives.seconds } }, { "text": `\n\n` },
                 { "text": `§9Server Info:\n` },
                 { "text": `§l§i|§r §5Online: §f` }, { "score": { "name": "@s", "objective": objectives.online } }, { "text": `/11\n` },
                 { "text": `§l§i|§r §9Discord: §fe4pAc2J4e6\n` },
