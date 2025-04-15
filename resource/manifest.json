@@ -1,5 +1,10 @@
 {
     "format_version": 2,
+    "metadata": {
+        "authors": ["bluemods.lol", "untakensoulz"],
+        "license": "AGPLv3",
+        "url": "https://bluemods.neocities.org"
+    },
     "header": {
         "name": "Glitch PvP RePack",
         "description": "Made by @UnTakenSoulz",

@@ -1,9 +1,9 @@
 {
     "format_version": 2,
     "metadata": {
-        "authors": ["bluemods.lol"],
+        "authors": ["bluemods.lol", "untakensoulz"],
         "license": "AGPLv3",
-        "url": "https://example.com"
+        "url": "https://bluemods.neocities.org"
     },
     "header": {
         "name": "Glitch PvP BPack",
