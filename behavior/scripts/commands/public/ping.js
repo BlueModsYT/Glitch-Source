@@ -24,7 +24,6 @@ Command.register({
     }
     
     const worldTPS = Math.min(20, 20);
-    player.sendMessage(`§7[§a#§7] §aPing§7: §e${responseTime}ms §7[${pingStatus}§7] | §aTPS: §e${worldTPS}§7/§e20`);
-    
+    player.sendMessage(`§7[§a#§7] §aPing§7: §e${responseTime}ms §7[${pingStatus}§7] | §aTPS: §e${worldTPS}§7/§e20`);q
     player.runCommand(`playsound random.orb @s`);
 });
