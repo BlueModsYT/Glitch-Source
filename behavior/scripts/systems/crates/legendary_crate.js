@@ -1,11 +1,10 @@
 import { world, ItemStack, system } from "@minecraft/server";
 
 const lootTable = [
-    { id: "minecraft:diamond", amount: 1, chance: 5 },      // 5% chance
-    { id: "minecraft:iron_ingot", amount: 3, chance: 25 },  // 25% chance
-    { id: "minecraft:gold_ingot", amount: 5, chance: 40 },  // 40% chance
-    { id: "minecraft:emerald", amount: 2, chance: 15 },     // 15% chance
-    { id: "minecraft:apple", amount: 10, chance: 15 }       // 15% chance
+      { id: "minecraft:netherite_block", amount: 1, chance: 40 },
+      { id: "minecraft:netherite_ingot", amount: 3, chance: 25 },
+      { id: "minecraft:diamond_block", amount: 3, chance: 15 },
+      { id: "minecraft:ancient_debris", amount: 4, chance: 20 }
 ];
 
 const targetChestLocation = { x: 243, y: -55, z: 32 };
