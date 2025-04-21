@@ -16,6 +16,15 @@
 		},
 		"legendary_key": {
 		    "textures": "textures/items/legendary_key"
+		},
+		"op_pickaxe": {
+		    "textures": "textures/items/op_pickaxe"
+		},
+		"op_sword": {
+		    "textures": "textures/items/op_sword"
+		},
+		"poopstick": {
+		    "textures": "textures/items/poopstick"
 		}
     }
 }
