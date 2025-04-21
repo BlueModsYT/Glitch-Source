@@ -1,0 +1,43 @@
+{
+    "format_version": "1.21.70",
+    "minecraft:item": {
+        "description": {
+            "identifier": "glitch:op_sword",
+            "menu_category": {
+                "category": "equipment",
+                "group": "minecraft:itemGroup.name.sword"
+            }
+        },
+        "components": {
+            "minecraft:max_stack_size": 1,
+            "minecraft:glint": true,
+            "minecraft:hand_equipped": true,
+            "minecraft:allow_off_hand": false,
+            "minecraft:durability": {
+                "max_durability": 2032
+            },
+            "minecraft:damage": 10,
+            "minecraft:enchantable": {
+                "value": 11,
+                "slot": "sword"
+            },
+            "minecraft:icon": "op_sword",
+            "minecraft:display_name": {
+                "value": "OP Sword"
+            },
+            "minecraft:digger": {
+                "use_efficiency": true,
+                "destroy_speeds": [
+                    {
+                        "block": "minecraft:web",
+                        "speed": 15
+                    },
+                    {
+                        "block": "minecraft:bamboo",
+                        "speed": 10
+                    }
+                ]
+            }
+        }
+    }
+}

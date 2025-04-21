@@ -1,43 +1,34 @@
 import { world, ItemStack, system } from "@minecraft/server";
+import { spawnFirework, deniedSound, fullSound } from "./functions.js";
 
 const lootTable = [
-      { id: "minecraft:book", amount: 5, chance: 40 },
-      { id: "minecraft:stick", amount: 10, chance: 15 },
-      { id: "minecraft:emerald", amount: 2, chance: 15 },
-      { id: "minecraft:diamond", amount: 5, chance: 10 },
-      { id: "minecraft:diamond_sword", amount: 1, chance: 10 },
-      { id: "glitch:rare_key", amount: 1, chance: 1 },
+    { id: "minecraft:coal", amount: 16, chance: 26 },
+    { id: "glitch:poopstick", amount: 2, chance: 26 },
+    { id: "minecraft:gold_ingot", amount: 5, chance: 10 },
+    { id: "minecraft:iron_ingot", amount: 8, chance: 10 },
+    { id: "minecraft:redstone", amount: 10, chance: 10 },
+    { id: "minecraft:diamond", amount: 2, chance: 5  },
+    { id: "minecraft:emerald", amount: 3, chance: 5  },
+    { id: "minecraft:totem_of_undying", amount: 1, chance: 5  },
+    { id: "glitch:rare_key", amount: 1, chance: 1.5 },
+    { id: "minecraft:netherite_ingot", amount: 1, chance: 1.5 }
 ];
 
-const targetChestLocation = { x: 0, y: -54, z: 0 };
+const targetChestLocation = { x: 238, y: -55, z: 34 };
 const requiredItem = "glitch:common_key";
-
-function spawnFirework(dimension, location) {
-    const { x, y, z } = location;
-
-    const offsets = [0, 0.2, -0.2, 0.1, -0.1];
-
-    for (let i = 0; i < offsets.length; i++) {
-        system.runTimeout(() => {
-            dimension.runCommand(`summon fireworks_rocket ${x + offsets[i]} ${y + 1} ${z + offsets[i]}`);
-        }, i * 2);
-    }
-}
 
 async function resetChest(dimension, location) {
     const { x, y, z } = location;
     await dimension.runCommand(`setblock ${x} ${y} ${z} minecraft:air`);
-    await dimension.runCommand(`setblock ${x} ${y} ${z} minecraft:chest`);
+    await dimension.runCommand(`setblock ${x} ${y} ${z} minecraft:chest ["minecraft:cardinal_direction"="south"]`);
 }
 
 function giveRandomLoot(player) {
     const container = player.getComponent("inventory").container;
     
-    // Calculate total weight
     const totalWeight = lootTable.reduce((sum, item) => sum + item.chance, 0);
     let random = Math.random() * totalWeight;
     
-    // Find selected loot
     let selectedLoot;
     for (const item of lootTable) {
         random -= item.chance;
@@ -47,14 +38,11 @@ function giveRandomLoot(player) {
         }
     }
     
-    // Create item stack
     const itemStack = new ItemStack(selectedLoot.id, selectedLoot.amount);
     
-    // Try to add to inventory
     const leftover = container.addItem(itemStack);
     if (leftover) {
-        player.sendMessage("§4[!] §cInventory full! Clear space and try again.");
-        player.runCommand("playsound block.anvil.land @s");
+        fullSound(player); // sound
         return false;
     }
     return true;
@@ -64,7 +52,6 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
     const { block, player } = event;
     const { x, y, z } = block.location;
     
-    // Check if interacting with target chest
     if (block.typeId !== "minecraft:chest" || 
         !Object.entries(targetChestLocation).every(([coord, val]) => block.location[coord] === val)) {
         return;
@@ -73,7 +60,6 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
     const container = player.getComponent("inventory").container;
     let keySlot = -1;
 
-    // Search for required key
     for (let i = 0; i < container.size; i++) {
         const item = container.getItem(i);
         if (item?.typeId === requiredItem) {
@@ -82,21 +68,17 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
         }
     }
 
-    // Always reset chest after interaction
     system.run(async () => {
         await resetChest(block.dimension, block.location);
     });
 
     if (keySlot === -1) {
-        player.sendMessage("§4[!] §cAccess Denied! Required: §6Special Key");
-        player.runCommand("playsound mob.enderdragon.growl @s");
+        deniedSound(player); // sound
         return;
     }
 
-    // Attempt to give loot
     if (!giveRandomLoot(player)) return;
 
-    // Remove key
     const keyStack = container.getItem(keySlot);
     if (keyStack.amount > 1) {
         keyStack.amount--;
@@ -108,6 +90,6 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
     // Success effects
     system.run(() => {
         spawnFirework(block.dimension, block.location);
-        world.sendMessage(`§6★ ${player.name} §ahas unlocked a common crate!`);
+        world.sendMessage(`§g★ §e${player.name} §ahas unlocked a common crate!`);
     });
 });

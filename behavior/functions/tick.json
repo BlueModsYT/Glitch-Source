@@ -1,6 +1,7 @@
 {
     "replace": false,
     "values": [
-        "op_effect"
+        "op_effect",
+        "spawn_prot"
     ]
 }

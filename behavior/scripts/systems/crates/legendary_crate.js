@@ -1,10 +1,17 @@
 import { world, ItemStack, system } from "@minecraft/server";
+import { spawnFirework, deniedSound, fullSound } from "./functions.js";
 
 const lootTable = [
-      { id: "minecraft:netherite_block", amount: 1, chance: 40 },
-      { id: "minecraft:netherite_ingot", amount: 3, chance: 25 },
-      { id: "minecraft:diamond_block", amount: 3, chance: 15 },
-      { id: "minecraft:ancient_debris", amount: 4, chance: 20 }
+    { id: "minecraft:diamond_block", amount: 3, chance: 10 },
+    { id: "minecraft:ancient_debris", amount: 4, chance: 10 },
+    { id: "minecraft:netherite_ingot", amount: 3, chance: 10 },
+    { id: "minecraft:diamond", amount: 2, chance: 5 },
+    { id: "minecraft:gold_ingot", amount: 5, chance: 5 },
+    { id: "minecraft:netherite_block", amount: 1, chance: 5 },
+    { id: "minecraft:emerald_block", amount: 1, chance: 5 },
+    { id: "minecraft:totem_of_undying", amount: 1, chance: 5 },
+    { id: "minecraft:enchanted_golden_apple", amount: 1, chance: 5 },
+    { id: "glitch:legendary_key", amount: 1, chance: 1 }
 ];
 
 const targetChestLocation = { x: 243, y: -55, z: 32 };
@@ -25,7 +32,7 @@ function spawnFirework(dimension, location) {
 async function resetChest(dimension, location) {
     const { x, y, z } = location;
     await dimension.runCommand(`setblock ${x} ${y} ${z} minecraft:air`);
-    await dimension.runCommand(`setblock ${x} ${y} ${z} minecraft:chest`);
+    await dimension.runCommand(`setblock ${x} ${y} ${z} minecraft:chest ["minecraft:cardinal_direction"="south"]`);
 }
 
 function giveRandomLoot(player) {
@@ -51,8 +58,7 @@ function giveRandomLoot(player) {
     // Try to add to inventory
     const leftover = container.addItem(itemStack);
     if (leftover) {
-        player.sendMessage("§4[!] §cInventory full! Clear space and try again.");
-        player.runCommand("playsound block.anvil.land @s");
+        fullSound(player); // sound
         return false;
     }
     return true;
@@ -86,8 +92,7 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
     });
 
     if (keySlot === -1) {
-        player.sendMessage("§4[!] §cAccess Denied! Required: §6Special Key");
-        player.runCommand("playsound mob.enderdragon.growl @s");
+        deniedSound(player); // sound
         return;
     }
 
@@ -106,6 +111,6 @@ world.afterEvents.playerInteractWithBlock.subscribe((event) => {
     // Success effects
     system.run(() => {
         spawnFirework(block.dimension, block.location);
-        world.sendMessage(`§6★ ${player.name} §ahas unlocked a legendary crate!`);
+        world.sendMessage(`§g★ §e${player.name} §ahas unlocked a legendary crate!`);
     });
 });
