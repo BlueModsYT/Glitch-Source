@@ -1,18 +1,34 @@
-import { system, world } from "@minecraft/server";
+import { world, system, EntityAttributeComponent, EntityHealthComponent, EntityScaleComponent } from "@minecraft/server";
 import main from "../commands/config.js"
+import { formatNumber, objectives, getScore } from "./scoreboard.js";
 
 // All rights reserved @bluemods.lol - discord account. | Please report any bugs or glitches in our discord server https://dsc.gg/bluemods
 
-function getRank(player) {
-    const tags = player.getTags();
-    const rankTag = tags.find(tag => tag.startsWith("rank:"));
-    return rankTag ? rankTag.replace("rank:", "") : "§6Member"; // Default to "Member" if no rank is found
+const Default_Prefix = "rank:";
+const Default_Rank = "§6Member";
+
+// For chat messages - gets up to 3 ranks
+function getChatRanks(player) {
+    const ranks = player.getTags()
+        .filter(tag => tag.startsWith(Default_Prefix))
+        .map(tag => tag.replace(Default_Prefix, ""))
+        .slice(0, 3); // Limit to 3 ranks for chat
+    return ranks.length === 0 ? [Default_Rank] : ranks;
+}
+
+// For nameTag display - gets up to 4 ranks
+function getNameTagRanks(player) {
+    const ranks = player.getTags()
+        .filter(tag => tag.startsWith(Default_Prefix))
+        .map(tag => tag.replace(Default_Prefix, ""))
+        .slice(0, 4); // Limit to 4 ranks for nameTag
+    return ranks.length === 0 ? [Default_Rank] : ranks;
 }
 
 function formatChatMessage(player, message) {
-    const rank = getRank(player); // Get player's rank from tags
-
-    return `§l§7<§r${rank}§l§7>§r§7 ${player.nameTag} §l§b»§r §f${message}`;
+    const ranks = getChatRanks(player);
+    const rankText = ranks.join(" §7|§r ");
+    return `§l§7<§r${rankText}§l§7>§r§7 ${player.name} §l§b»§r §f${message}`;
 }
 
 function chat(data) {
@@ -20,10 +36,18 @@ function chat(data) {
     const message = data.message;
 
     const chatMessage = formatChatMessage(player, message);
-    system.run(() => world.getDimension("overworld").runCommand(`tellraw @a {"rawtext":[{"translate":${JSON.stringify(chatMessage)}}]}`));
+    system.run(() => world.getDimension("overworld").runCommand(`tellraw @a {"rawtext":[{"text":${JSON.stringify(chatMessage)}}]}`));
     
     data.cancel = true;
 }
+
+system.runInterval(() => {
+    for (const player of world.getPlayers()) {
+        const ranks = getNameTagRanks(player).join(" §7|§r ");
+        const money = formatNumber(getScore(player, objectives.money));
+        player.nameTag = `${player.name} §7| §2$§a${money}\n§7[ §r${ranks} §7]`;
+    }
+}, 0);
 
 system.runInterval(() => {
     system.run(() => world.getDimension("overworld").runCommand(`scoreboard players reset @a Sents`));
@@ -35,4 +59,4 @@ world.beforeEvents.chatSend.subscribe((data) => {
     }
 });
 
-export { getRank };
+export { getChatRanks as getRank }; // Export the nameTag version as getRank for compatibility

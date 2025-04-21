@@ -1,15 +1,13 @@
 import { system, world } from "@minecraft/server";
 import { getRank } from "./ranks.js";
-import { ShopTestHandle } from "./shop.js";
+import { MainShopUI } from "./shop.js";
 
 // Scoreboard Objectives
-const objectives = {
+export const objectives = {
     money: "Money",
     kills: "Kills",
     deaths: "Deaths",
     killstreak: "KS",
-    kdr: "KDR",
-    kdrd: "KDRD",
     days: "D",
     hours: "H",
     minutes: "M",
@@ -21,7 +19,7 @@ const objectives = {
 const MONEY_LIMIT = 2_147_483_647;
 
 // Function to Format Large Numbers
-function formatNumber(value) {
+export function formatNumber(value) {
     if (value >= 1_000_000_000) return (value / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + "B";
     if (value >= 1_000_000) return (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + "M";
     if (value >= 1_000) return (value / 1_000).toFixed(1).replace(/\.0$/, '') + "K";
@@ -109,7 +107,7 @@ system.runInterval(() => {
 }, 100);
 
 // Get Score from Scoreboard (Returns 0 if Undefined)
-function getScore(player, objective) {
+export function getScore(player, objective) {
     if (!player.scoreboardIdentity) {
         console.warn(`Scoreboard identity for player ${player.name} is not available. Retrying...`);
         return 0; // Return 0 temporarily and retry later if needed
@@ -135,13 +133,8 @@ world.afterEvents.entityDie.subscribe(event => {
     increaseScore(killer, objectives.kills);
     increaseScore(killer, objectives.killstreak);
 
-    // Calculate KDR (Kill-to-Death Ratio)
     const kills = getScore(killer, objectives.kills);
     const deaths = getScore(killer, objectives.deaths) || 1; // Avoid division by zero
-    const kdr = (kills / deaths).toFixed(3); // Ensure a 3-decimal format
-
-    setScore(killer, objectives.kdr, Math.floor(kdr)); // Store whole number
-    setScore(killer, objectives.kdrd, Math.round((kdr % 1) * 1000)); // Store decimal separately
 
     // Reset dead player's killstreak and increase their deaths
     setScore(deadEntity, objectives.killstreak, 0);
@@ -171,45 +164,80 @@ system.runInterval(() => {
 }, 20);
 
 // Online Players Update  
-system.runInterval(() => {  
+system.runInterval(() => {
     const onlinePlayers = world.getPlayers().length;  
     world.getPlayers().forEach(player => {  
         setScore(player, objectives.online, onlinePlayers);  
     });  
-}, 20);
-
-// Auto `/titleraw` Update
-system.runInterval(() => {
-    world.getPlayers().forEach(player => {
-        const start = Date.now();
-        player.runCommand(`testfor @s`);
-        const responseTime = Date.now() - start;
-        const rank = getRank(player);
-        const money = formatNumber(getScore(player, objectives.money));
-
-        const statsJSON = {
-            "rawtext": [
-                { "text": `\n\n§9Player Stats:\n` },
-                { "text": `§l§i|§r §5IGN: §f` }, { "selector": "@s" }, { "text": `\n` },
-                { "text": `§l§i|§r §9Rank: §b${rank}\n` },
-                { "text": `§l§i|§r §5Money: §a$${money}\n` },
-                { "text": `§l§i|§r §9Kills: §f` }, { "score": { "name": "@s", "objective": objectives.kills } }, { "text": `\n` },
-                { "text": `§l§i|§r §5Deaths: §f` }, { "score": { "name": "@s", "objective": objectives.deaths } }, { "text": `\n` },
-                { "text": `§l§i|§r §9Killstreak: §f` }, { "score": { "name": "@s", "objective": objectives.killstreak } }, { "text": `\n` },
-                { "text": `§l§i|§r §5K/D: §f[` }, { "score": { "name": "@s", "objective": objectives.kdr } }, { "text": "] [" }, { "score": { "name": "@s", "objective": objectives.kdrd } }, { "text": `]\n` },
-                { "text": `§l§i|§r §9Ping: §f${responseTime} §ams\n` },
-                { "text": `§l§i|§r §5Time: §5D:§f`}, { "score": { "name": "@s", "objective": objectives.days } }, { "text": ` §5H:§f` }, { "score": { "name": "@s", "objective": objectives.hours } }, { "text": ` §5M:§f` }, { "score": { "name": "@s", "objective": objectives.minutes } }, { "text": ` §5S:§f` }, { "score": { "name": "@s", "objective": objectives.seconds } }, { "text": `\n\n` },
-                { "text": `§9Server Info:\n` },
-                { "text": `§l§i|§r §5Online: §f` }, { "score": { "name": "@s", "objective": objectives.online } }, { "text": `/11\n` },
-                { "text": `§l§i|§r §9Discord: §fe4pAc2J4e6\n` },
-                { "text": `§l§i|§r §5Realm: §fD6WisWH4c4xqh9A\n\n` }
-            ]
-        };
-
-        player.runCommand(`titleraw @s title ${JSON.stringify(statsJSON)}`);
-    });
 }, 1);
 
+const pingCooldown = new Map();
+
+function measurePing(player) {
+    const now = Date.now();
+    const cooldown = 200;
+    
+    if (pingCooldown.has(player.id)) {
+        const { lastCheck, lastPing } = pingCooldown.get(player.id);
+        if (now - lastCheck < cooldown) {
+            return lastPing;
+        }
+    }
+
+    const start = Date.now();
+    try {
+        player.runCommand("testfor @s");
+        const currentPing = Date.now() - start;
+        pingCooldown.set(player.id, {
+            lastCheck: now,
+            lastPing: currentPing
+        });
+        return currentPing;
+    } catch {
+        pingCooldown.set(player.id, {
+            lastCheck: now,
+            lastPing: -1
+        });
+        return -1;
+    }
+}
+
+// Auto `/titleraw` Update
+function playerScoreboard(player) {
+    const ping = measurePing(player);
+    const rank = getRank(player);
+    const rankText = rank.join("§7,§r ");
+    const money = formatNumber(getScore(player, objectives.money));
+    
+    const statsJSON = {
+        "rawtext": [
+            { "text": `\n\n§9Player Stats:\n` },
+            { "text": `§l§i|§r §5IGN: §f` }, { "selector": "@s" }, { "text": `\n` },
+            { "text": `§l§i|§r §9Rank: §b${rankText}\n` },
+            { "text": `§l§i|§r §5Money: §2$§a${money}\n` },
+            { "text": `§l§i|§r §9Killstreak: §f` }, { "score": { "name": "@s", "objective": objectives.killstreak } }, { "text": `\n` },
+            { "text": `§l§i|§r §5K/D: §f[` }, { "score": { "name": "@s", "objective": objectives.kills } }, { "text": "] [" }, { "score": { "name": "@s", "objective": objectives.deaths } }, { "text": `]\n` },
+            { "text": `§l§i|§r §9Ping: ${ping > 0 ? `§f${ping} §ams` : "§f0 §ams"}\n` },
+            { "text": `§l§i|§r §5Time: §5D:§f`}, { "score": { "name": "@s", "objective": objectives.days } }, { "text": ` §5H:§f` }, { "score": { "name": "@s", "objective": objectives.hours } }, { "text": ` §5M:§f` }, { "score": { "name": "@s", "objective": objectives.minutes } }, { "text": ` §5S:§f` }, { "score": { "name": "@s", "objective": objectives.seconds } }, { "text": `\n\n` },
+            { "text": `§9Server Info:\n` },
+            { "text": `§l§i|§r §5Online: §f` }, { "score": { "name": "@s", "objective": objectives.online } }, { "text": `/11\n` },
+            { "text": `§l§i|§r §9Discord: §fe4pAc2J4e6\n` },
+            { "text": `§l§i|§r §5Realm: §fD6WisWH4c4xqh9A\n\n` }
+        ]
+    };
+    
+    try {
+        system.run(() => player.runCommand(`titleraw @s title ${JSON.stringify(statsJSON)}`));
+    } catch (error) {
+        console.error("Title command failed:", error);
+    }
+}
+
+system.runInterval(() => {
+    world.getPlayers().forEach(player => {
+        playerScoreboard(player);
+    });
+}, 1);
 
 //
 // Compass Panels
@@ -233,13 +261,9 @@ export function showCompassUI(player) {
         .body("Choose an option:");
 
     form.button("Profile", "textures/items/book_portfolio")
+        .button("Shop Kits", "textures/items/gold_pickaxe")
         .button("Warp Area", "textures/ui/conduit_power_effect")
-        .button("TPA", "textures/ui/FriendsIcon")
         .button("Server Info", "textures/ui/mashup_world");
-    
-    if (player.hasTag(main.adminTag)) {
-        form.button("Shop Testing", "textures/items/gold_pickaxe");
-    }
     
     form.show(player).then((response) => {
         if (response.canceled) return;
@@ -249,17 +273,13 @@ export function showCompassUI(player) {
                 ProfileHandle(player);
                 break;
             case 1:
-                WarpHandle(player);
+                MainShopUI(player);
                 break;
             case 2:
-                PVPHandle(player);
-                player.playSound("random.break", { pitch: 1, volume: 0.4 });
+                WarpHandle(player);
                 break;
             case 3:
                 ServerInfoHandle(player);
-                break;
-            case 4:
-                ShopTestHandle(player);
                 break;
         }
     }).catch((error) => {
@@ -270,11 +290,9 @@ export function showCompassUI(player) {
 function ProfileHandle(player) {
     const rank = getRank(player);
     const money = formatNumber(getScore(player, objectives.money));
+    const killstreak = getScore(player, objectives.killstreak);
     const kills = getScore(player, objectives.kills);
     const deaths = getScore(player, objectives.deaths);
-    const killstreak = getScore(player, objectives.killstreak);
-    const kdr = getScore(player, objectives.kdr);
-    const kdrd = getScore(player, objectives.kdrd);
     const online = getScore(player, objectives.online);
 
     const form = new ActionFormData()
@@ -288,7 +306,7 @@ function ProfileHandle(player) {
             `§l§i|§r §9Kills: §f${kills}\n` +
             `§l§i|§r §5Deaths: §f${deaths}\n` +
             `§l§i|§r §9Killstreak: §f${killstreak}\n` +
-            `§l§i|§r §5K/D: §f[${kdr}] [${kdrd}]\n` +
+            `§l§i|§r §5K/D: §f[${kills}] [${deaths}]\n` +
             `\n\n§f================================`
         );
 
@@ -317,7 +335,6 @@ function WarpHandle(player) {
         .body("Choose an option:");
 
     form.button("Spawn", "textures/ui/conduit_power_effect")
-        .button("Shop", "textures/ui/MCoin")
         .button("Mining Area", "textures/items/diamond_pickaxe")
         .button("Kit Opener", "textures/items/shulker_shell")
         .button("Coming Soon", "textures/ui/missing_item")
@@ -331,21 +348,17 @@ function WarpHandle(player) {
                 SpawnHandle(player);
                 break;
             case 1:
-                ShopHandle(player);
-                break;
-            case 2:
                 MiningHandle(player);
                 break;
-            case 3:
+            case 2:
                 // KitOpener(player);
-                WarpHandle(player);
                 player.playSound("random.break", { pitch: 1, volume: 0.4 });
                 break;
-            case 4:
-                WarpHandle(player)
+            case 3:
+                // WarpHandle(player)
                 player.playSound("random.break", { pitch: 1, volume: 0.4 });
                 break;
-            case 5: 
+            case 4: 
                 showCompassUI(player);
                 break;
         }
@@ -453,4 +466,35 @@ function MiningHandle(player) {
             system.clearRun(id);
         }
     }, 20);
+}
+
+function ServerInfoHandle(player) {
+    const devs = main.developers.join("§7, §a"); 
+
+    const form = new ActionFormData()
+        .title("§l§dGlitch §0| §aInformation")
+        .body(
+            `§7- Development by: §a${devs}\n\n` +
+            `§eClick the button below to copy the Discord link!`
+        )
+        
+    form.button("Copy Discord Link", "textures/ui/discord-icon-512x")
+        .button("Back", "textures/ui/arrow_left");
+
+    form.show(player).then((response) => {
+        if (response.canceled || response.selection === 2) return;
+
+        if (response.selection === 0) {
+            if(!testIfPlayerCanUsePCCopyTextPanel(player)){
+                player.sendMessage("§7[§b#§7] §aDiscord Link: §ehttps://discord.gg/ppPT3MvgCk");
+                player.sendMessage("§7[§b#§7] §aPlease manually copy the link from the chat.");
+            }else{
+                pcCopyTextPanel(player, "https://discord.gg/ppPT3MvgCk");
+            }
+        } else if (response.selection === 1) {
+            showCompassUI(player);
+        }
+    }).catch((error) => {
+        console.error("Failed to show About form:", error);
+    });
 }
