@@ -3,7 +3,6 @@ import "./systems/dailyrewards.js";
 import "./systems/scoreboard.js";
 import "./systems/sellpad.js";
 import "./systems/ranks.js";
-import "./systems/isMending.js";
 import "./systems/starterkit.js";
 import "./systems/itemTrigger.js";
 import "./systems/crates/common_crate.js";
