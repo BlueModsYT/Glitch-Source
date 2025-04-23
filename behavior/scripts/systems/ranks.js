@@ -7,21 +7,19 @@ import { formatNumber, objectives, getScore } from "./scoreboard.js";
 const Default_Prefix = "rank:";
 const Default_Rank = "§6Member";
 
-// For chat messages - gets up to 3 ranks
 function getChatRanks(player) {
     const ranks = player.getTags()
         .filter(tag => tag.startsWith(Default_Prefix))
         .map(tag => tag.replace(Default_Prefix, ""))
-        .slice(0, 3); // Limit to 3 ranks for chat
+        .slice(0, 3);
     return ranks.length === 0 ? [Default_Rank] : ranks;
 }
 
-// For nameTag display - gets up to 4 ranks
 function getNameTagRanks(player) {
     const ranks = player.getTags()
         .filter(tag => tag.startsWith(Default_Prefix))
         .map(tag => tag.replace(Default_Prefix, ""))
-        .slice(0, 4); // Limit to 4 ranks for nameTag
+        .slice(0, 4);
     return ranks.length === 0 ? [Default_Rank] : ranks;
 }
 
@@ -34,7 +32,7 @@ function formatChatMessage(player, message) {
 function chat(data) {
     const player = data.sender;
     const message = data.message;
-
+    
     const chatMessage = formatChatMessage(player, message);
     system.run(() => world.getDimension("overworld").runCommand(`tellraw @a {"rawtext":[{"text":${JSON.stringify(chatMessage)}}]}`));
     

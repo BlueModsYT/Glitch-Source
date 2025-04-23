@@ -1,4 +1,6 @@
 import { system, world } from "@minecraft/server";
+import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
+import main from "../commands/config.js";
 import { getRank } from "./ranks.js";
 import { MainShopUI } from "./shop.js";
 
@@ -12,7 +14,9 @@ export const objectives = {
     hours: "H",
     minutes: "M",
     seconds: "S",
-    online: "Online"
+    online: "Online",
+    cps: "CPS",
+    clicks: "Clicks"
 };
 
 // Maximum money limit (prevents negative money)
@@ -38,8 +42,7 @@ system.run(() => {
 // Increase Score (Prevents Exceeding Money Limit & Adds Warning)
 function increaseScore(player, objective, amount = 1) {
     if (!player.scoreboardIdentity) {
-        console.warn(`Scoreboard identity for player ${player.name} is not available. Retrying...`);
-        system.runTimeout(() => increaseScore(player, objective, amount), 20); // Retry after 1 second (20 ticks)
+        system.runTimeout(() => increaseScore(player, objective, amount), 20);
         return;
     }
 
@@ -117,28 +120,57 @@ export function getScore(player, objective) {
     return obj && player.scoreboardIdentity ? obj.getScore(player.scoreboardIdentity) ?? 0 : 0;
 }
 
+// CPS Systems
+const clickRecords = new Map();
+
+world.afterEvents.entityHurt.subscribe(event => {
+    const damageSource = event.damageSource;
+    const player = damageSource.damagingEntity;
+
+    if (player?.typeId === "minecraft:player") {
+        const now = Date.now();
+        if (!clickRecords.has(player.id)) {
+            clickRecords.set(player.id, []);
+        }
+        clickRecords.get(player.id).push(now);
+    }
+});
+
+system.runInterval(() => {
+    const now = Date.now();
+    world.getPlayers().forEach(player => {
+        const clicks = clickRecords.get(player.id) || [];
+        const recentClicks = clicks.filter(t => now - t <= 1000);
+        clickRecords.set(player.id, recentClicks);
+        setScore(player, objectives.cps, recentClicks.length);
+    });
+}, 20);
+
 // Handle Killstreak
 world.afterEvents.entityDie.subscribe(event => {
     const { damageSource, deadEntity } = event;
 
-    // Ensure damageSource and damagingEntity exist
-    if (!damageSource || !damageSource.damagingEntity) return;
+    if (deadEntity.typeId === "minecraft:player") {
+        setScore(deadEntity, objectives.killstreak, 0);
+        increaseScore(deadEntity, objectives.deaths);
 
-    const killer = damageSource.damagingEntity;
+        const killer = damageSource.damagingEntity;
+        if (killer?.typeId === "minecraft:player") {
+            const player = killer;
+            
+            increaseScore(player, objectives.kills, 1);
+            increaseScore(player, objectives.killstreak, 1);
+            increaseScore(player, objectives.money, 1000);
 
-    if (killer.typeId !== "minecraft:player") return;
-    if (deadEntity.typeId !== "minecraft:player") return;
-
-    // Increase killer's kills and killstreak
-    increaseScore(killer, objectives.kills);
-    increaseScore(killer, objectives.killstreak);
-
-    const kills = getScore(killer, objectives.kills);
-    const deaths = getScore(killer, objectives.deaths) || 1; // Avoid division by zero
-
-    // Reset dead player's killstreak and increase their deaths
-    setScore(deadEntity, objectives.killstreak, 0);
-    increaseScore(deadEntity, objectives.deaths);
+            const effectOptions = {
+                duration: 1,
+                amplifier: 255,
+                showParticles: false
+            };
+            player.addEffect("instant_health", effectOptions.duration, effectOptions);
+            player.sendMessage(`§aKilled §e${deadEntity}§a, Received +$1,000 and Full Health!`);
+        }
+    }
 });
 
 // Time Tracking (Only While Online)
@@ -218,6 +250,7 @@ function playerScoreboard(player) {
             { "text": `§l§i|§r §9Killstreak: §f` }, { "score": { "name": "@s", "objective": objectives.killstreak } }, { "text": `\n` },
             { "text": `§l§i|§r §5K/D: §f[` }, { "score": { "name": "@s", "objective": objectives.kills } }, { "text": "] [" }, { "score": { "name": "@s", "objective": objectives.deaths } }, { "text": `]\n` },
             { "text": `§l§i|§r §9Ping: ${ping > 0 ? `§f${ping} §ams` : "§f0 §ams"}\n` },
+            { "text": "§l§i|§r §5CPS: §f" }, { "score": { "name": "@s", "objective": objectives.cps } }, { "text": "\n" },
             { "text": `§l§i|§r §5Time: §5D:§f`}, { "score": { "name": "@s", "objective": objectives.days } }, { "text": ` §5H:§f` }, { "score": { "name": "@s", "objective": objectives.hours } }, { "text": ` §5M:§f` }, { "score": { "name": "@s", "objective": objectives.minutes } }, { "text": ` §5S:§f` }, { "score": { "name": "@s", "objective": objectives.seconds } }, { "text": `\n\n` },
             { "text": `§9Server Info:\n` },
             { "text": `§l§i|§r §5Online: §f` }, { "score": { "name": "@s", "objective": objectives.online } }, { "text": `/11\n` },
@@ -242,9 +275,6 @@ system.runInterval(() => {
 //
 // Compass Panels
 //
-
-import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
-import main from "../commands/config.js";
 
 world.afterEvents.itemUse.subscribe((event) => {
     const { itemStack, source } = event;
